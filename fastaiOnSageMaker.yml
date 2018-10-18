@@ -1,0 +1,87 @@
+AWSTemplateFormatVersion: "2010-09-09"
+
+Description: >
+  fastai on SageMaker: This template creates an Amazon SageMaker notebook instance
+  preloaded with the fast.ai library and same notebooks. **WARNING** This template
+  creates an Amazon SageMaker notebook instance. You will be billed for the AWS
+  resources used if you create a stack from this template.
+
+Parameters:
+  NotebookInstanceType:
+    Type: String
+    Default: ml.t2.micro
+    AllowedValues:
+      - ml.t2.micro
+      - ml.t2.large
+      - ml.p2.xlarge
+      - ml.p3.2xlarge
+    Description: Use t2.micro or t2.large for testing, use p2.xlarge or p3.2xlarge for GPU instances.
+
+Resources:
+  fastaiSageMakerLifecycleConfig:
+    Type: "AWS::SageMaker::NotebookInstanceLifecycleConfig"
+    Properties:
+      OnStart:
+        - Content:
+            Fn::Base64: !Sub |
+              #!/bin/bash
+              set -e
+              echo "Creating fast.ai conda environment"
+              cat > /home/ec2-user/fastai-setup.sh << EOF
+              #!/bin/bash
+              cd /home/ec2-user/SageMaker/fastai
+              conda env update
+              source activate fastai
+              echo "Finished creating fast.ai conda environment"
+              EOF
+              chown ec2-user:ec2-user /home/ec2-user/fastai-setup.sh
+              chmod 755 /home/ec2-user/fastai-setup.sh
+              sudo -i -u ec2-user bash << EOF
+              echo "Creating fast.ai conda env in background process."
+              nohup /home/ec2-user/fastai-setup.sh &
+              EOF
+      NotebookInstanceLifecycleConfigName: FastaiConfig
+      OnCreate:
+        - Content:
+            Fn::Base64: !Sub |
+              #!/bin/bash
+              set -e
+              sudo -i -u ec2-user bash << EOF
+              git clone https://github.com/fastai/fastai.git /home/ec2-user/SageMaker/fastai
+              mkdir /home/ec2-user/SageMaker/fastai/courses/dl1/data
+              EOF
+
+  fastaiNotebookInstance:
+    Type: "AWS::SageMaker::NotebookInstance"
+    Properties:
+      InstanceType: !Ref NotebookInstanceType
+      RoleArn: !GetAtt ExecutionRole.Arn
+      LifecycleConfigName: !GetAtt fastaiSageMakerLifecycleConfig.NotebookInstanceLifecycleConfigName
+
+  ExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - "sagemaker.amazonaws.com"
+            Action:
+              - "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: "root"
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: "Allow"
+                Action: "*"
+                Resource: "*"
+
+Outputs:
+  BasicNotebookInstanceId:
+    Value: !Ref fastaiNotebookInstance
+  BasicNotebookInstanceLifecycleConfigId:
+    Value: !Ref fastaiSageMakerLifecycleConfig

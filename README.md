@@ -1,7 +1,11 @@
 # fastaionsagemaker
 
-A AWS Cloudformation template to create an Amazon SageMaker instance with the fastai 0.7.x library for course.fast.ai.
+A AWS Cloudformation template to create an Amazon SageMaker instance with the fastai 0.7.x library for course.fast.ai based on the blog post <b>Running fast.ai notebooks with Amazon SageMaker</b> (https://aws.amazon.com/blogs/machine-learning/running-fast-ai-notebooks-with-amazon-sagemaker/)
 
-### Notebook Instance Type
+### Choosing Notebook Instance Type
 
 You can choose t2 instances for testing or choose ml.p2.xlarge or ml.p3.2xlarge if you wish to use an instance with a GPU, which is useful given we will train our fast.ai models on the same notebook instance. The ml.p2.xlarge instance has a Nvidia K80 GPU and the ml.p3.2xlarge has the more powerful Nvidia V100 GPU so training times for our models will be accelerated compared to other instance types. The ml.p3.2xlarge has a higher per hour charge than the ml.p2.xlarge ($4.284 vs $1.26 per hour in the N. Virginia Region), but you will most likely be able to train your deep learning models faster so the actual cost of training your model may be lower as you do not need to run the instance as long. The default limit per account of ml.p2.xlarge instances is 1 and for the ml.p3.2xlarge instances it is 2, so ensure that there are not too many other notebooks of the same type running in the same account to avoid hitting this limit or create a support case with AWS Support to request to have the limit increased. Details of the Amazon SageMaker default limits per account can be found here: https://docs.aws.amazon.com/general/latest/gr/aws_service_limits.html#limits_sagemaker.
+
+### Launching the stack
+
+Launch the stack in AWS CloudFormation. Once completed, the Amazon SageMaker notebook instance will be created and the lifecycle config will be installing the fastai library in the background. This takes about 10 minutes. You can confirm that this has completed by looking at Amazon CloudWatch Logs under /aws/sagemaker/NotebookInstances and look up the LifecycleConfigOnStart log. Wait until you see the the line "Finished creating fast.ai conda environment" at which point the notebook instance is ready to go. Open the notebook instance and run the course.fast.ai notebooks. You may be prompted to select a kernel, select conda_fastai.
