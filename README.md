@@ -1,4 +1,4 @@
-# fastaionsagemaker
+# fast.ai On Amazon SageMaker
 
 A AWS Cloudformation template to create an Amazon SageMaker instance with the fastai 0.7.x library for course.fast.ai based on the blog post <b>Running fast.ai notebooks with Amazon SageMaker</b> (https://aws.amazon.com/blogs/machine-learning/running-fast-ai-notebooks-with-amazon-sagemaker/)
 
