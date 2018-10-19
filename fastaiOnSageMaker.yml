@@ -9,9 +9,9 @@ Description: >
 Parameters:
   NotebookInstanceType:
     Type: String
-    Default: ml.t2.micro
+    Default: ml.t2.medium
     AllowedValues:
-      - ml.t2.micro
+      - ml.t2.medium
       - ml.t2.large
       - ml.p2.xlarge
       - ml.p3.2xlarge
@@ -40,7 +40,6 @@ Resources:
               echo "Creating fast.ai conda env in background process."
               nohup /home/ec2-user/fastai-setup.sh &
               EOF
-      NotebookInstanceLifecycleConfigName: FastaiConfig
       OnCreate:
         - Content:
             Fn::Base64: !Sub |
@@ -48,7 +47,9 @@ Resources:
               set -e
               sudo -i -u ec2-user bash << EOF
               git clone https://github.com/fastai/fastai.git /home/ec2-user/SageMaker/fastai
-              mkdir /home/ec2-user/SageMaker/fastai/courses/dl1/data
+              mkdir -p /home/ec2-user/SageMaker/fastai/courses/dl1/data
+              mkdir -p /home/ec2-user/SageMaker/fastai/courses/dl2/data
+              mkdir -p /home/ec2-user/SageMaker/fastai/courses/ml1/data/bulldozers
               EOF
 
   fastaiNotebookInstance:
@@ -81,7 +82,5 @@ Resources:
                 Resource: "*"
 
 Outputs:
-  BasicNotebookInstanceId:
-    Value: !Ref fastaiNotebookInstance
-  BasicNotebookInstanceLifecycleConfigId:
-    Value: !Ref fastaiSageMakerLifecycleConfig
+  CloudWatchLog:
+    Value: !Sub "https://${AWS::Region}.console.aws.amazon.com/cloudwatch/home?region=${AWS::Region}#logEventViewer:group=/aws/sagemaker/NotebookInstances;stream=${fastaiNotebookInstance.NotebookInstanceName}/LifecycleConfigOnStart"
